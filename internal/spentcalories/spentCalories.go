@@ -1,6 +1,9 @@
 package spentcalories
 
 import (
+	"fmt"
+	"strconv"
+	"strings"
 	"time"
 )
 
@@ -13,37 +16,45 @@ const (
 	cmInM     = 100   // количество сантиметров в метре.
 )
 
+// parseTraining разбивает строку на составляющие и возвращает количество шагов, вид активности и продолжительность.
 func parseTraining(data string) (int, string, time.Duration, error) {
-	// ваш код ниже
+	dataSlice := strings.Split(data, ",")
+
+	if len(dataSlice) != 3 {
+		return 0, "", 0, fmt.Errorf("Неверный формат данных")
+	}
+	//strconv.Atoi преобразует строку с данными в тип (int)
+	//strings.TrimSpace удаляет пробелы и другие разделители в слайсе
+	steps, err := strconv.Atoi(strings.TrimSpace(dataSlice[0]))
+	if err != nil {
+		return 0, "", 0, err
+	}
+
+	if steps <= 0 {
+		return 0, "", 0, fmt.Errorf("количество шагов должно быть больше 0")
+	}
+	//time.ParseDuration разбирает продолжительности времени в виде строки и преобразует его в тип time.Duration.
+	//strings.TrimSpace удаляет пробелы и другие разделители в слайсе
+	duration, err := time.ParseDuration(strings.TrimSpace(dataSlice[2]))
+	if err != nil {
+		return 0, "", 0, err
+	}
+	return steps, strings.TrimSpace(dataSlice[1]), duration, nil
 }
 
 // distance возвращает дистанцию(в километрах), которую преодолел пользователь за время тренировки.
-//
-// Параметры:
-//
-// steps int — количество совершенных действий (число шагов при ходьбе и беге).
 func distance(steps int) float64 {
-	// ваш код ниже
+	return float64(steps) * lenStep / float64(mInKm)
 }
 
 // meanSpeed возвращает значение средней скорости движения во время тренировки.
-//
-// Параметры:
-//
-// steps int — количество совершенных действий(число шагов при ходьбе и беге).
-// duration time.Duration — длительность тренировки.
 func meanSpeed(steps int, duration time.Duration) float64 {
-	// ваш код ниже
-}
+	if duration <= 0 {
+		return 0
+	}
 
-// ShowTrainingInfo возвращает строку с информацией о тренировке.
-//
-// Параметры:
-//
-// data string - строка с данными.
-// weight, height float64 — вес и рост пользователя.
-func TrainingInfo(data string, weight, height float64) string {
-	// ваш код ниже
+	dist := distance(steps)
+	return dist / duration.Hours()
 }
 
 // Константы для расчета калорий, расходуемых при беге.
@@ -53,15 +64,9 @@ const (
 )
 
 // RunningSpentCalories возвращает количество потраченных колорий при беге.
-//
-// Параметры:
-//
-// steps int - количество шагов.
-// weight float64 — вес пользователя.
-// duration time.Duration — длительность тренировки.
 func RunningSpentCalories(steps int, weight float64, duration time.Duration) float64 {
-	// ваш код здесь
-
+	meanSpd := meanSpeed(steps, duration)
+	return ((runningCaloriesMeanSpeedMultiplier * meanSpd) - runningCaloriesMeanSpeedShift) * weight
 }
 
 // Константы для расчета калорий, расходуемых при ходьбе.
@@ -71,14 +76,32 @@ const (
 )
 
 // WalkingSpentCalories возвращает количество потраченных калорий при ходьбе.
-//
-// Параметры:
-//
-// steps int - количество шагов.
-// duration time.Duration — длительность тренировки.
-// weight float64 — вес пользователя.
-// height float64 — рост пользователя.
 func WalkingSpentCalories(steps int, weight, height float64, duration time.Duration) float64 {
-	// ваш код здесь
+	meanSpeed := meanSpeed(steps, duration)
+	return ((float64(walkingCaloriesWeightMultiplier) * weight) + (meanSpeed*meanSpeed/height)*float64(walkingSpeedHeightMultiplier)) * float64(duration) * minInH
+}
 
+// TrainingInfo возвращает строку с информацией о тренировке.
+func TrainingInfo(data string, weight, height float64) string {
+	steps, activity, duration, err := parseTraining(data)
+	if err != nil {
+		return fmt.Sprintf("Ошибка: %v", err)
+	}
+
+	switch activity {
+	case "Бег":
+		dist := distance(steps)
+		speed := meanSpeed(steps, duration)
+		calories := RunningSpentCalories(steps, weight, duration)
+		return fmt.Sprintf("Тип тренировки: %s\nДлительность: %.2f ч.\nДистанция: %.2f км.\nСкорость: %.2f км/ч\nСожгли калорий: %.2f",
+			activity, duration.Hours(), dist, speed, calories)
+	case "Ходьба":
+		dist := distance(steps)
+		speed := meanSpeed(steps, duration)
+		calories := WalkingSpentCalories(steps, weight, height, duration)
+		return fmt.Sprintf("Тип тренировки: %s\nДлительность: %.2f ч.\nДистанция: %.2f км.\nСкорость: %.2f км/ч\nСожгли калорий: %.2f",
+			activity, duration.Hours(), dist, speed, calories)
+	default:
+		return "Неизвестный тип тренировки"
+	}
 }
