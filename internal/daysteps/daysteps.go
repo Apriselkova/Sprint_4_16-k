@@ -21,13 +21,13 @@ var (
 func parsePackage(data string) (int, time.Duration, error) {
 	sliceData := strings.Split(data, ",")
 
-	if len(sliceData) < 3 {
+	if len(sliceData) != 2 {
 		return 0, 0, fmt.Errorf("Неверный формат данных")
 	}
 
 	//strconv.Atoi преобразует строку с данными в тип (int)
 	//strings.TrimSpace удаляет пробелы и другие разделители в слайсе
-	steps, err := strconv.Atoi(strings.TrimSpace(sliceData[1]))
+	steps, err := strconv.Atoi(strings.TrimSpace(sliceData[0]))
 	if err != nil {
 		return 0, 0, err
 	}
@@ -38,7 +38,7 @@ func parsePackage(data string) (int, time.Duration, error) {
 
 	//time.ParseDuration разбирает продолжительности времени в виде строки и преобразует его в тип time.Duration.
 	//strings.TrimSpace удаляет пробелы и другие разделители в слайсе
-	duration, err := time.ParseDuration(strings.TrimSpace(sliceData[2]))
+	duration, err := time.ParseDuration(strings.TrimSpace(sliceData[1]))
 	if err != nil {
 		return 0, 0, err
 	}
@@ -50,8 +50,10 @@ func parsePackage(data string) (int, time.Duration, error) {
 func DayActionInfo(data string, weight, height float64) string {
 	steps, duration, err := parsePackage(data)
 	if err != nil {
-		return fmt.Sprintf("Ошибка: %v", err)
+		fmt.Printf("Ошибка: %v\n", err)
+		return ""
 	}
+
 	if steps <= 0 {
 		var m string
 		return m

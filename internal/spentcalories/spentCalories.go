@@ -21,7 +21,7 @@ func parseTraining(data string) (int, string, time.Duration, error) {
 	dataSlice := strings.Split(data, ",")
 
 	if len(dataSlice) != 3 {
-		return 0, "", 0, fmt.Errorf("Неверный формат данных")
+		return 0, "", 0, fmt.Errorf("Ошибка: ожидается 3 элемент, получено %d", len(dataSlice))
 	}
 	//strconv.Atoi преобразует строку с данными в тип (int)
 	//strings.TrimSpace удаляет пробелы и другие разделители в слайсе
